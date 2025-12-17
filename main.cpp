@@ -12,27 +12,22 @@ HWND hButtonSendMsg;
 HWND hButtonFuture1;
 HWND hButtonFuture2;
 
-// Função de janela
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
         case WM_CREATE: {
-            // Obter fator de escala DPI
             UINT dpi = GetDpiForWindow(hWnd);
             float scale = dpi / 96.0f;
 
-            // Constantes escaladas
             const int margin = static_cast<int>(10 * scale);
             const int spacing = static_cast<int>(10 * scale);
             const int buttonW = static_cast<int>(100 * scale);
             const int buttonH = static_cast<int>(30 * scale);
 
-            // Pega tamanho inicial da janela cliente
             RECT rc;
             GetClientRect(hWnd, &rc);
             int cx = rc.right - rc.left;
             int cy = rc.bottom - rc.top;
 
-            // Alturas proporcionais
             int topH = (cy * 50 + 50) / 100; // 50%
             int midH = (cy * 40 + 50) / 100; // 40%
 
@@ -57,7 +52,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                 hWnd, NULL, GetModuleHandle(NULL), NULL);
             SendMessageA(hEditServerInfo, EM_SETBKGNDCOLOR, 0, RGB(20, 20, 20));
 
-            // Cálculo da largura dos botões
             int totalButtonW = 3 * buttonW + 2 * spacing;
             int msgW = cx - totalButtonW - 2 * margin - spacing;
             msgW = max(0, msgW);
@@ -89,27 +83,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                 btnX, cy - buttonH - margin, buttonW, buttonH,
                 hWnd, (HMENU)(INT_PTR)2003, GetModuleHandle(NULL), NULL);
 
+			// Define quais tipos seram gravados no arquivo de log
             pLog.EnableFileLevel(LogLevel::Info);
             pLog.EnableFileLevel(LogLevel::Warning);
             pLog.EnableFileLevel(LogLevel::Error);
 
-            // Inicializa o sistema de logs
             pLog.SetTarget(hEditLog);
 
-            std::string ipStr = "192.168.0.1";
-            unsigned int a, b, c, d;
-            char dot;
-
-            std::stringstream ss(ipStr);
-            ss >> a >> dot >> b >> dot >> c >> dot >> d;
-
-            unsigned int Ip = (a << 24) | (b << 16) | (c << 8) | d;
-
-            // Teste de logs
+			// Teste de logs simulação de mensagens de servidor
             pLog.Trace("Mensagem de rastreamento detalhado.");
             pLog.Debug("Mensagem de depuração.");
             pLog.Info("Servidor iniciado com sucesso.");
-            pLog.Info("Testando outros parametros.", "Segunda String", Ip);
+            pLog.Info("Testando outros parametros.");
             pLog.Warning("Conexão instável detectada.");
             pLog.Error("Falha crítica no subsistema.");
         } break;
@@ -149,21 +134,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             int cx = LOWORD(lParam);
             int cy = HIWORD(lParam);
 
-            // Obter fator de escala DPI
             UINT dpi = GetDpiForWindow(hWnd);
-            float scale = dpi / 96.0f; // 96 é o DPI padrão
+            float scale = dpi / 96.0f;
 
-            // Constantes escaladas
             const int margin = static_cast<int>(10 * scale);
             const int spacing = static_cast<int>(10 * scale);
             const int buttonW = static_cast<int>(100 * scale);
             const int buttonH = static_cast<int>(30 * scale);
 
-            // Alturas proporcionais com arredondamento
             int topH = (cy * 50 + 50) / 100; // 50% da altura
             int midH = (cy * 40 + 50) / 100; // 40% da altura
 
-            // Garantir limites mínimos
             topH = max(topH, buttonH);
             midH = max(midH, buttonH);
 
@@ -176,17 +157,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             // Informações do servidor
             MoveWindow(hEditServerInfo, margin, margin + topH + spacing, max(0, cx - 2 * margin), midH, TRUE);
 
-            // Cálculo da largura total dos botões + espaçamentos
             int totalButtonW = 3 * buttonW + 2 * spacing;
 
-            // Largura da barra de mensagem = espaço restante
             int msgW = cx - totalButtonW - 2 * margin - spacing;
-            msgW = max(0, msgW); // evitar negativo
+            msgW = max(0, msgW);
 
             // Campo de mensagem
             MoveWindow(hEditMessage, margin, cy - buttonH - margin, msgW, buttonH, TRUE);
 
-            // Botões alinhados à direita
             int btnX = margin + msgW + spacing;
             MoveWindow(hButtonSendMsg, btnX, cy - buttonH - margin, buttonW, buttonH, TRUE);
 
@@ -210,7 +188,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     LPSTR lpCmdLine, int nCmdShow) {
 
-    // Carrega biblioteca RichEdit moderna
     LoadLibraryA("Msftedit.dll");
 
     const char CLASS_NAME[] = "LogSystem";
@@ -219,12 +196,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
-    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH); // fundo preto
+    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 
     RegisterClassA(&wc);
 
     HWND hWnd = CreateWindowExA(
-        0, CLASS_NAME, "TMSrv Emu",
+        0, CLASS_NAME, "TesteLogSystem",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 1380, 768,
         NULL, NULL, hInstance, NULL);

@@ -32,10 +32,8 @@ namespace WYD_Server {
 
         void SetTarget(HWND editHandle);
 
-        // Método único de log
         void Log(LogLevel level, const std::string& msg, const std::string& extra = "", unsigned int ip = 0);
 
-        // Wrappers inline simplificados
         inline void Trace(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Trace, msg, extra, ip); }
         inline void Debug(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Debug, msg, extra, ip); }
         inline void Info(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Info, msg, extra, ip); }
@@ -55,24 +53,23 @@ namespace WYD_Server {
         }
 
     private:
-        HWND hEdit;                         // handle do RichEdit
-        std::ofstream logFile;              // arquivo de log atual (wide-char)
-        std::string currentDate;            // data corrente (YYYY-MM-DD)
-        std::set<LogLevel> fileLevels;      // níveis que vão para arquivo
-        int retentionDays;                  // dias de retenção dos logs
-        std::string logDir;                 // diretório dos logs
-        int fileIndex;                      // índice de rotação do arquivo (server_YYYY-MM-DD_X.log)
-        size_t maxLogSize;                  // tamanho máximo em bytes antes de rotacionar
+        HWND hEdit;                                                                             // handle do RichEdit
+        std::ofstream logFile;                                                                  // arquivo de log atual (wide-char)
+        std::string currentDate;                                                                // data corrente (YYYY-MM-DD)
+        std::set<LogLevel> fileLevels;                                                          // níveis que vão para arquivo
+        int retentionDays;                                                                      // dias de retenção dos logs
+        std::string logDir;                                                                     // diretório dos logs
+        int fileIndex;                                                                          // índice de rotação do arquivo (server_YYYY-MM-DD_X.log)
+        size_t maxLogSize;                                                                      // tamanho máximo em bytes antes de rotacionar
 
-        // Configurações de compressão e backup
-        std::string compressMode;           // modo de compressão: none, file, day
-        bool uploadBackup;                  // habilita/desabilita upload para FTP
-        std::string ftpServer;              // servidor FTP
-        std::string ftpUser;                // usuário FTP
-        std::string ftpPass;                // senha FTP
-        std::string ftpPath;                // pasta remota no FTP
+        std::string compressMode;                                                               // modo de compressão: none, file, day
+        bool uploadBackup;                                                                      // habilita/desabilita upload para FTP
+        std::string ftpServer;                                                                  // servidor FTP
+        std::string ftpUser;                                                                    // usuário FTP
+        std::string ftpPass;                                                                    // senha FTP
+        std::string ftpPath;                                                                    // pasta remota no FTP
 
-        std::string buffer;				    // buffer temporário global para formatação
+        std::string buffer;				                                                        // buffer temporário global para formatação
 
         COLORREF GetColor(LogLevel level);                                                      // cor por nível
         std::string LevelToString(LogLevel level);                                              // string por nível
@@ -89,15 +86,13 @@ namespace WYD_Server {
 
     class LogManager {
     public:
-        // Retorna a instância única
         static LogManager& Instance() {
-            static LogManager instance; // criado na primeira chamada, destruído automaticamente no fim do programa
+            static LogManager instance;
             return instance;
         }
 
         LogSystem& GetLogInst() { return logInst; }
 
-        // Outras funções utilitárias podem ser adicionadas aqui
     private:
         LogManager() = default;
         ~LogManager() = default;

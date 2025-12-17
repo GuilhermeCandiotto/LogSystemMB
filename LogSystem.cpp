@@ -24,7 +24,6 @@ namespace WYD_Server {
             OpenLogFile();
         }
         catch (...) {
-            // fallback seguro
             retentionDays = 7;
             maxLogSize = 1048576;
             compressMode = "day";
@@ -36,9 +35,7 @@ namespace WYD_Server {
         try {
             if (logFile.is_open()) logFile.close();
         }
-        catch (...) {
-            // nunca deixar exceção escapar do destrutor
-        }
+        catch (...) { }
     }
 
     void LogSystem::SetTarget(HWND editHandle) {
@@ -73,12 +70,10 @@ namespace WYD_Server {
         ss << timestamp << " " << prefix << " ";
         ss << msg << " ";
 
-        // Adiciona string extra se não for vazia
         if (!extra.empty()) {
             ss << "[" << extra << "] ";
         }
 
-        // Adiciona IP se não for 0
         if (ip != 0) {
             char ipStr[32];
             sprintf_s(ipStr, "%u.%u.%u.%u",
@@ -134,35 +129,29 @@ namespace WYD_Server {
         auto now = std::chrono::system_clock::now();
         std::map<std::string, std::vector<std::string>> filesByDay;
 
-        // Itera sobre todos os arquivos no diretório de logs
         for (const auto& entry : fs::directory_iterator(logDir)) {
             auto name = entry.path().filename().string();
             if (!fs::is_regular_file(entry.path())) continue;
 
-            // Regex para capturar data do nome do arquivo: server_YYYY-MM-DD_X.log
             std::regex re(R"(server_log_(\d{4}-\d{2}-\d{2})_\d+\.log)");
             std::smatch match;
             if (std::regex_match(name, match, re)) {
                 std::string dayStr = match[1].str();
 
-                // Converte a data extraída para time_point
                 std::tm tm = {};
                 sscanf_s(dayStr.c_str(), "%d-%d-%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday);
                 tm.tm_year -= 1900;
                 tm.tm_mon -= 1;
                 auto fileDate = std::chrono::system_clock::from_time_t(std::mktime(&tm));
 
-                // Calcula diferença em dias
                 auto ageDays = std::chrono::duration_cast<std::chrono::hours>(now - fileDate).count() / 24;
 
-                // Só adiciona se passou do retentionDays
                 if (ageDays >= retentionDays) {
                     filesByDay[dayStr].push_back(entry.path().string());
                 }
             }
         }
 
-        // Processa apenas os grupos de arquivos que passaram do retentionDays
         for (auto& [day, files] : filesByDay) {
             Info("Iniciando compactação dos logs do dia " + day);
 
@@ -171,7 +160,6 @@ namespace WYD_Server {
 
                 for (auto& f : files) {
                     try {
-                        // Verifica se o arquivo está aberto/bloqueado
                         std::ifstream test(f, std::ios::in | std::ios::binary);
                         if (test.is_open()) {
                             test.close();
@@ -187,7 +175,6 @@ namespace WYD_Server {
                     }
                 }
 
-                // Se upload estiver habilitado, envia para FTP
                 if (uploadBackup) {
                     std::string localZip = logDir + "/logpack_" + day + ".zip";
                     std::string remoteZip = ftpPath + "logpack_" + day + ".zip";
@@ -211,15 +198,12 @@ namespace WYD_Server {
     // =======================
     void LogSystem::LoadConfig(const std::string& filename) {
         try {
-            // Garante que a pasta Config existe
             fs::path configDir = fs::current_path() / "Config";
             if (!fs::exists(configDir)) {
                 fs::create_directory(configDir);
             }
 
-            // Caminho completo do arquivo dentro da pasta Config
             fs::path configFile = configDir / filename;
-            // Se o arquivo não existir, cria com valores padrão e comentários
             if (!fs::exists(configFile)) {
                 std::ofstream ini(configFile);
                 if (!ini.is_open()) {
@@ -265,7 +249,6 @@ namespace WYD_Server {
 
             char tempbuffer[256];
 
-            // Leitura segura dos parâmetros
             GetPrivateProfileString("Log", "retentionDays", "7", tempbuffer, 256, configFile.string().c_str());
             retentionDays = atoi(tempbuffer);
 
@@ -369,8 +352,8 @@ namespace WYD_Server {
     }
 
     // =======================
-// Função para adicionar texto colorido ao controle RichEdit e mostrar o log na interface
-// =======================
+    // Função para adicionar texto colorido ao controle RichEdit e mostrar o log na interface
+    // =======================
     void LogSystem::AppendColoredText(const std::string& text, COLORREF textColor) {
         if (!hEdit || !IsWindow(hEdit)) {
             WriteToFile(text);
