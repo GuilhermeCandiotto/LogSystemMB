@@ -6,7 +6,8 @@ namespace WYD_Server {
 
     LogSystem::LogSystem() {
         try {
-            hEdit = nullptr;
+            hEditLeft = nullptr;
+			hEditRight = nullptr;
             fileIndex = 1;
             retentionDays = 7;
             maxLogSize = 1048576; // 1 MB
@@ -38,10 +39,10 @@ namespace WYD_Server {
         catch (...) { }
     }
 
-    void LogSystem::SetTarget(HWND editHandle) {
+    void LogSystem::SetTargetLeft(HWND editHandle) {
         try {
-            hEdit = editHandle;
-            if (!hEdit) {
+            hEditLeft = editHandle;
+            if (!hEditLeft) {
                 Warning("SetTarget chamado com handle nulo");
             }
 
@@ -50,6 +51,27 @@ namespace WYD_Server {
             CleanupOldLogs();
 
             Info("LogSystem inicializado com sucesso");
+        }
+        catch (const std::exception& e) {
+            Error(std::string("Exceção em SetTarget: ") + e.what());
+        }
+        catch (...) {
+            Error("Erro desconhecido em SetTarget");
+        }
+    }
+
+    void LogSystem::SetTargetRight(HWND editHandle) {
+        try {
+            hEditRight = editHandle;
+            if (!hEditRight) {
+                Warning("SetTarget chamado com handle nulo");
+            }
+
+            LoadConfig("logconfig.ini");
+            OpenLogFile();
+            CleanupOldLogs();
+
+            Packets("PacketSystem inicializado com sucesso");
         }
         catch (const std::exception& e) {
             Error(std::string("Exceção em SetTarget: ") + e.what());
@@ -87,9 +109,9 @@ namespace WYD_Server {
 
         std::string fullMsg = ss.str();
 
-        // Saída para RichEdit
-        if (hEdit && IsWindow(hEdit)) {
-            AppendColoredText(fullMsg + "\r\n", GetColor(level));
+        HWND target = (level == LogLevel::Packets) ? hEditRight : hEditLeft;
+        if (target && IsWindow(target)) {
+            AppendColoredText(target, fullMsg + "\r\n", GetColor(level));
         }
 
         // Rotação de arquivo por data
@@ -309,6 +331,8 @@ namespace WYD_Server {
         case LogLevel::Info:    return RGB(0, 255, 0);          //verde
         case LogLevel::Warning: return RGB(255, 255, 0);        //amarelo
         case LogLevel::Error:   return RGB(255, 0, 0);          //vermelho
+        case LogLevel::Quest:   return RGB(255, 105, 180);      //rosa
+        case LogLevel::Packets: return RGB(255, 165, 0);        //laranja
         }
         return RGB(200, 200, 200);                              //cinza claro
     }
@@ -323,6 +347,8 @@ namespace WYD_Server {
         case LogLevel::Info:    return "[INFO]";
         case LogLevel::Warning: return "[WARN]";
         case LogLevel::Error:   return "[ERROR]";
+        case LogLevel::Quest:   return "[QUEST]";
+        case LogLevel::Packets: return "[PACKETS]";
         }
         return "[UNKNOWN]";
     }
@@ -354,14 +380,14 @@ namespace WYD_Server {
     // =======================
     // Função para adicionar texto colorido ao controle RichEdit e mostrar o log na interface
     // =======================
-    void LogSystem::AppendColoredText(const std::string& text, COLORREF textColor) {
-        if (!hEdit || !IsWindow(hEdit)) {
+    void LogSystem::AppendColoredText(HWND target, const std::string& text, COLORREF textColor) {
+        if (!target || !IsWindow(target)) {
             WriteToFile(text);
             return;
         }
 
         CHARRANGE cr{ -1, -1 };
-        SendMessageA(hEdit, EM_EXSETSEL, 0, (LPARAM)&cr);
+        SendMessageA(target, EM_EXSETSEL, 0, (LPARAM)&cr);
 
         CHARFORMAT2A cf{};
         cf.cbSize = sizeof(CHARFORMAT2A);
@@ -371,9 +397,9 @@ namespace WYD_Server {
         strcpy_s(cf.szFaceName, "Consolas");
         cf.yHeight = 200;
 
-        SendMessageA(hEdit, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
-        SendMessageA(hEdit, EM_REPLACESEL, FALSE, (LPARAM)text.c_str());
-        SendMessageA(hEdit, EM_SCROLL, SB_BOTTOM, 0);
+        SendMessageA(target, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+        SendMessageA(target, EM_REPLACESEL, FALSE, (LPARAM)text.c_str());
+        SendMessageA(target, EM_SCROLL, SB_BOTTOM, 0);
     }
 
     // =======================

@@ -23,14 +23,15 @@
 
 namespace WYD_Server {
 
-    enum class LogLevel { Trace, Debug, Info, Warning, Error };
+    enum class LogLevel { Trace, Debug, Info, Warning, Error, Quest, Packets };
 
     class LogSystem {
     public:
         LogSystem();
         ~LogSystem();
 
-        void SetTarget(HWND editHandle);
+        void SetTargetLeft(HWND editHandle);
+        void SetTargetRight(HWND editHandle);
 
         void Log(LogLevel level, const std::string& msg, const std::string& extra = "", unsigned int ip = 0);
 
@@ -39,6 +40,8 @@ namespace WYD_Server {
         inline void Info(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Info, msg, extra, ip); }
         inline void Warning(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Warning, msg, extra, ip); }
         inline void Error(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Error, msg, extra, ip); }
+        inline void Quest(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Quest, msg, extra, ip); }
+        inline void Packets(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Packets, msg, extra, ip); }
 
         void EnableFileLevel(LogLevel level);
         void DisableFileLevel(LogLevel level);
@@ -53,7 +56,8 @@ namespace WYD_Server {
         }
 
     private:
-        HWND hEdit;                                                                             // handle do RichEdit
+        HWND hEditLeft;                                                                         // handle do RichEdit Logs
+        HWND hEditRight;                                                                        // handle do RichEdit Packets
         std::ofstream logFile;                                                                  // arquivo de log atual (wide-char)
         std::string currentDate;                                                                // data corrente (YYYY-MM-DD)
         std::set<LogLevel> fileLevels;                                                          // níveis que vão para arquivo
@@ -75,7 +79,7 @@ namespace WYD_Server {
         std::string LevelToString(LogLevel level);                                              // string por nível
         std::string GetTimestamp();                                                             // timestamp atual
         std::string GetDate();                                                                  // data atual
-        void AppendColoredText(const std::string& text, COLORREF color);                        // escreve no RichEdit
+        void AppendColoredText(HWND target, const std::string& text, COLORREF textColor);       // escreve no RichEdit
         void WriteToFile(const std::string& text);                                              // escreve no arquivo
         void OpenLogFile(); 														            // abre/rotaciona arquivo
 

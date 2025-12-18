@@ -87,8 +87,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             pLog.EnableFileLevel(LogLevel::Info);
             pLog.EnableFileLevel(LogLevel::Warning);
             pLog.EnableFileLevel(LogLevel::Error);
+			pLog.EnableFileLevel(LogLevel::Quest);
 
-            pLog.SetTarget(hEditLog);
+            pLog.SetTargetLeft(hEditLog);
+            pLog.SetTargetRight(hEditPackets);
 
 			// Teste de logs simulação de mensagens de servidor
             pLog.Trace("Mensagem de rastreamento detalhado.");
@@ -97,6 +99,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             pLog.Info("Testando outros parametros.");
             pLog.Warning("Conexão instável detectada.");
             pLog.Error("Falha crítica no subsistema.");
+			pLog.Quest("Quest iniciada pelo jogador.");
+			pLog.Packets("Pacote recebido do cliente.");
         } break;
 
         case WM_COMMAND: {
@@ -126,6 +130,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
                 pLog.Info("Testando outros parametros.", "Segunda String2", Ip);
                 pLog.Warning("Conexão instável detectada.");
                 pLog.Error("Falha crítica no subsistema.");
+				pLog.Quest("Quest iniciada pelo jogador.", "Detalhes da quest", Ip);
+				pLog.Packets("Pacote recebido do cliente.", "Detalhes do pacote", Ip);
                 break;
             }
         } break;
