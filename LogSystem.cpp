@@ -6,8 +6,27 @@ namespace WYD_Server {
 
     LogSystem::LogSystem() {
         try {
-            hEditLeft = nullptr;
-			hEditRight = nullptr;
+            // Destinos padrão
+            routing[(int)LogLevel::Trace] = TargetSide::Left;
+            routing[(int)LogLevel::Debug] = TargetSide::Left;
+            routing[(int)LogLevel::Info] = TargetSide::Left;
+            routing[(int)LogLevel::Warning] = TargetSide::Left;
+            routing[(int)LogLevel::Error] = TargetSide::Left;
+            routing[(int)LogLevel::Quest] = TargetSide::Left;
+            routing[(int)LogLevel::Packets] = TargetSide::Right;
+
+            // Cores padrão
+			levelColors[(int)LogLevel::Trace] = RGB(128, 128, 128);     //cinza médio
+			levelColors[(int)LogLevel::Debug] = RGB(0, 200, 255);       //azul claro/ciano
+			levelColors[(int)LogLevel::Info] = RGB(0, 255, 0);          //verde
+			levelColors[(int)LogLevel::Warning] = RGB(255, 255, 0);     //amarelo
+            levelColors[(int)LogLevel::Error] = RGB(255, 0, 0);         //vermelho
+			levelColors[(int)LogLevel::Quest] = RGB(255, 105, 180);     //rosa
+			levelColors[(int)LogLevel::Packets] = RGB(255, 165, 0);     //laranja
+
+            targets[0] = nullptr;
+            targets[1] = nullptr;
+
             fileIndex = 1;
             retentionDays = 7;
             maxLogSize = 1048576; // 1 MB
@@ -34,18 +53,15 @@ namespace WYD_Server {
 
     LogSystem::~LogSystem() {
         try {
-            if (logFile.is_open()) logFile.close();
+            if (logFile.is_open()) 
+                logFile.close();
         }
         catch (...) { }
     }
 
     void LogSystem::SetTarget(TargetSide side, HWND editHandle) {
         try {
-            if (side == TargetSide::Left)
-                hEditLeft = editHandle;
-
-            else
-                hEditRight = editHandle;
+            targets[(int)side] = editHandle;
 
             if (!editHandle) {
                 Warning("SetTarget chamado com handle nulo");
@@ -97,7 +113,9 @@ namespace WYD_Server {
 
         std::string fullMsg = ss.str();
 
-        HWND target = (level == LogLevel::Packets) ? hEditRight : hEditLeft;
+        TargetSide side = routing[(int)level];
+        HWND target = targets[(int)side];
+
         if (target && IsWindow(target)) {
             AppendColoredText(target, fullMsg + "\r\n", GetColor(level));
         }
@@ -313,16 +331,7 @@ namespace WYD_Server {
     // Função para obter a cor associada a cada nível de log
     // =======================
     COLORREF LogSystem::GetColor(LogLevel level) {
-        switch (level) {
-        case LogLevel::Trace:   return RGB(128, 128, 128);      //cinza médio
-        case LogLevel::Debug:   return RGB(0, 200, 255);        //azul claro/ciano
-        case LogLevel::Info:    return RGB(0, 255, 0);          //verde
-        case LogLevel::Warning: return RGB(255, 255, 0);        //amarelo
-        case LogLevel::Error:   return RGB(255, 0, 0);          //vermelho
-        case LogLevel::Quest:   return RGB(255, 105, 180);      //rosa
-        case LogLevel::Packets: return RGB(255, 165, 0);        //laranja
-        }
-        return RGB(200, 200, 200);                              //cinza claro
+        return levelColors[(int)level];
     }
 
     // =======================
@@ -387,7 +396,9 @@ namespace WYD_Server {
 
         SendMessageA(target, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
         SendMessageA(target, EM_REPLACESEL, FALSE, (LPARAM)text.c_str());
-        SendMessageA(target, EM_SCROLL, SB_BOTTOM, 0);
+
+        SendMessageA(target, EM_SETSEL, -1, -1);
+        SendMessageA(target, EM_SCROLLCARET, 0, 0);
     }
 
     // =======================
@@ -406,7 +417,7 @@ namespace WYD_Server {
         }
 
         if (logFile.is_open()) {
-            logFile << GetTimestamp() << " " << text << std::endl;
+            logFile << text << std::endl;
         }
     }
 

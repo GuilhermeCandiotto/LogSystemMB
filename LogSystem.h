@@ -23,8 +23,10 @@
 
 namespace WYD_Server {
 
+    static constexpr int TARGET_COUNT = 2;
+	static constexpr int LOG_LEVEL_COUNT = 7;
     enum class LogLevel { Trace, Debug, Info, Warning, Error, Quest, Packets };
-	enum class TargetSide { Left, Right };
+    enum class TargetSide { Left = 0, Right = 1 };
 
     class LogSystem {
     public:
@@ -32,7 +34,6 @@ namespace WYD_Server {
         ~LogSystem();
 
         void SetTarget(TargetSide side, HWND editHandle);
-
         void Log(LogLevel level, const std::string& msg, const std::string& extra = "", unsigned int ip = 0);
 
         inline void Trace(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Trace, msg, extra, ip); }
@@ -56,8 +57,10 @@ namespace WYD_Server {
         }
 
     private:
-        HWND hEditLeft;                                                                         // handle do RichEdit Logs
-        HWND hEditRight;                                                                        // handle do RichEdit Packets
+		HWND targets[TARGET_COUNT] = { nullptr, nullptr };                                      // Handles dos RichEdits de destino
+		TargetSide routing[LOG_LEVEL_COUNT];                                                    // Roteamento automático por nível
+        COLORREF levelColors[LOG_LEVEL_COUNT];                                                  // Cores por nível
+
         std::ofstream logFile;                                                                  // arquivo de log atual (wide-char)
         std::string currentDate;                                                                // data corrente (YYYY-MM-DD)
         std::set<LogLevel> fileLevels;                                                          // níveis que vão para arquivo
