@@ -39,10 +39,15 @@ namespace WYD_Server {
         catch (...) { }
     }
 
-    void LogSystem::SetTargetLeft(HWND editHandle) {
+    void LogSystem::SetTarget(TargetSide side, HWND editHandle) {
         try {
-            hEditLeft = editHandle;
-            if (!hEditLeft) {
+            if (side == TargetSide::Left)
+                hEditLeft = editHandle;
+
+            else
+                hEditRight = editHandle;
+
+            if (!editHandle) {
                 Warning("SetTarget chamado com handle nulo");
             }
 
@@ -50,28 +55,11 @@ namespace WYD_Server {
             OpenLogFile();
             CleanupOldLogs();
 
-            Info("LogSystem inicializado com sucesso");
-        }
-        catch (const std::exception& e) {
-            Error(std::string("Exceção em SetTarget: ") + e.what());
-        }
-        catch (...) {
-            Error("Erro desconhecido em SetTarget");
-        }
-    }
+            if (side == TargetSide::Left)
+                Info("LogSystem inicializado com sucesso");
 
-    void LogSystem::SetTargetRight(HWND editHandle) {
-        try {
-            hEditRight = editHandle;
-            if (!hEditRight) {
-                Warning("SetTarget chamado com handle nulo");
-            }
-
-            LoadConfig("logconfig.ini");
-            OpenLogFile();
-            CleanupOldLogs();
-
-            Packets("PacketSystem inicializado com sucesso");
+            else
+                Packets("PacketSystem inicializado com sucesso");
         }
         catch (const std::exception& e) {
             Error(std::string("Exceção em SetTarget: ") + e.what());

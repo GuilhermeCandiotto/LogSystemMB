@@ -89,8 +89,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             pLog.EnableFileLevel(LogLevel::Error);
 			pLog.EnableFileLevel(LogLevel::Quest);
 
-            pLog.SetTargetLeft(hEditLog);
-            pLog.SetTargetRight(hEditPackets);
+            pLog.SetTarget(TargetSide::Left, hEditLog);
+            pLog.SetTarget(TargetSide::Right, hEditPackets);
 
 			// Teste de logs simulação de mensagens de servidor
             pLog.Trace("Mensagem de rastreamento detalhado.");
@@ -209,7 +209,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     HWND hWnd = CreateWindowExA(
         0, CLASS_NAME, "TesteLogSystem",
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 1380, 768,
+        CW_USEDEFAULT, CW_USEDEFAULT, 1480, 768,
         NULL, NULL, hInstance, NULL);
 
     ShowWindow(hWnd, nCmdShow);

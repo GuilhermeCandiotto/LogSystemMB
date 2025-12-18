@@ -24,14 +24,14 @@
 namespace WYD_Server {
 
     enum class LogLevel { Trace, Debug, Info, Warning, Error, Quest, Packets };
+	enum class TargetSide { Left, Right };
 
     class LogSystem {
     public:
         LogSystem();
         ~LogSystem();
 
-        void SetTargetLeft(HWND editHandle);
-        void SetTargetRight(HWND editHandle);
+        void SetTarget(TargetSide side, HWND editHandle);
 
         void Log(LogLevel level, const std::string& msg, const std::string& extra = "", unsigned int ip = 0);
 
