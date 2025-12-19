@@ -33,7 +33,8 @@ namespace WYD_Server {
         LogSystem();
         ~LogSystem();
 
-        void SetTarget(TargetSide side, HWND editHandle);
+        void Initialize();                                                                      // inicializa o sistema de logs
+		void SetTarget(TargetSide side, HWND editHandle);                                       // define o destino do log (RichEdit)
         void Log(LogLevel level, const std::string& msg, const std::string& extra = "", unsigned int ip = 0);
 
         inline void Trace(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Trace, msg, extra, ip); }
@@ -44,13 +45,13 @@ namespace WYD_Server {
         inline void Quest(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Quest, msg, extra, ip); }
         inline void Packets(const std::string& msg, const std::string& extra = "", unsigned int ip = 0) { Log(LogLevel::Packets, msg, extra, ip); }
 
-        void EnableFileLevel(LogLevel level);
-        void DisableFileLevel(LogLevel level);
+		void EnableFileLevel(LogLevel level);                                                   // habilita gravação de nível no arquivo de log
+		void DisableFileLevel(LogLevel level);                                                  // desabilita gravação de nível no arquivo de log           
 
         void CleanupOldLogs();  											                    // compacta e limpa logs antigos
         void LoadConfig(const std::string& filename);											// lê configurações do logconfig.ini
 
-        template<typename... Args>
+		template<typename... Args>
         const std::string& Format(const char* fmt, Args... args) {
             buffer = std::format(fmt, args...);  // C++20
             return buffer;

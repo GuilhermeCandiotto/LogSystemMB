@@ -40,8 +40,7 @@ namespace WYD_Server {
             logDir = "Log";
             fs::create_directories(logDir);
 
-            LoadConfig("logconfig.ini");
-            OpenLogFile();
+            Initialize();
         }
         catch (...) {
             retentionDays = 7;
@@ -59,6 +58,12 @@ namespace WYD_Server {
         catch (...) { }
     }
 
+	void LogSystem::Initialize() {
+		LoadConfig("logconfig.ini");
+		OpenLogFile();
+		CleanupOldLogs();
+	}
+
     void LogSystem::SetTarget(TargetSide side, HWND editHandle) {
         try {
             targets[(int)side] = editHandle;
@@ -67,13 +72,8 @@ namespace WYD_Server {
                 Warning("SetTarget chamado com handle nulo");
             }
 
-            LoadConfig("logconfig.ini");
-            OpenLogFile();
-            CleanupOldLogs();
-
             if (side == TargetSide::Left)
                 Info("LogSystem inicializado com sucesso");
-
             else
                 Packets("PacketSystem inicializado com sucesso");
         }
