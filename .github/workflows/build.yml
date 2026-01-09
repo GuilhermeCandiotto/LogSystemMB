@@ -1,0 +1,148 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+  release:
+    types: [ published ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        platform: [x64, Win32]
+        config: [Debug, Release]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup vcpkg
+      uses: microsoft/setup-msbuild@v1.1
+      
+    - name: Cache vcpkg
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ github.workspace }}/vcpkg
+          C:/vcpkg/installed
+        key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/vcpkg.json') }}
+        
+    - name: Install dependencies
+      run: |
+        vcpkg install zlib:${{ matrix.platform }}-windows
+        vcpkg install minizip:${{ matrix.platform }}-windows
+        vcpkg integrate install
+        
+    - name: Build
+      run: |
+        msbuild LogSystemMB.sln /p:Configuration=${{ matrix.config }} /p:Platform=${{ matrix.platform }}
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: LogSystemMB-${{ matrix.platform }}-${{ matrix.config }}
+        path: |
+          ${{ matrix.platform }}/${{ matrix.config }}/LogSystemMB.exe
+          ${{ matrix.platform }}/${{ matrix.config }}/*.dll
+          
+  build-cmake:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup vcpkg
+      run: |
+        git clone https://github.com/Microsoft/vcpkg.git
+        ./vcpkg/bootstrap-vcpkg.bat
+        
+    - name: Install dependencies
+      run: |
+        ./vcpkg/vcpkg install zlib minizip
+        
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake
+        
+    - name: Build
+      run: |
+        cmake --build build --config ${{ env.BUILD_TYPE }}
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: LogSystemMB-CMake-${{ env.BUILD_TYPE }}
+        path: build/bin/${{ env.BUILD_TYPE }}/
+        
+  benchmark:
+    needs: build-windows
+    runs-on: windows-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: LogSystemMB-x64-Release
+        path: ./bin
+        
+    - name: Run benchmarks
+      run: |
+        ./bin/benchmark.exe > benchmark-results.txt
+        
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: benchmark-results.txt
+        
+  create-release:
+    needs: [build-windows, build-cmake]
+    runs-on: windows-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      
+    - name: Create distribution package
+      run: |
+        mkdir LogSystemMB-${{ github.event.release.tag_name }}
+        mkdir LogSystemMB-${{ github.event.release.tag_name }}/bin
+        mkdir LogSystemMB-${{ github.event.release.tag_name }}/docs
+        mkdir LogSystemMB-${{ github.event.release.tag_name }}/Config
+        
+        # Copy executables
+        copy LogSystemMB-x64-Release/* LogSystemMB-${{ github.event.release.tag_name }}/bin/
+        
+        # Copy documentation
+        copy README.md LogSystemMB-${{ github.event.release.tag_name }}/
+        copy CHANGELOG.md LogSystemMB-${{ github.event.release.tag_name }}/
+        copy CONTRIBUTING.md LogSystemMB-${{ github.event.release.tag_name }}/
+        copy LICENSE.txt LogSystemMB-${{ github.event.release.tag_name }}/
+        copy EXAMPLES.md LogSystemMB-${{ github.event.release.tag_name }}/
+        copy docs/* LogSystemMB-${{ github.event.release.tag_name }}/docs/
+        
+        # Create ZIP
+        Compress-Archive -Path LogSystemMB-${{ github.event.release.tag_name }} -DestinationPath LogSystemMB-${{ github.event.release.tag_name }}-windows-x64.zip
+        
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./LogSystemMB-${{ github.event.release.tag_name }}-windows-x64.zip
+        asset_name: LogSystemMB-${{ github.event.release.tag_name }}-windows-x64.zip
+        asset_content_type: application/zip

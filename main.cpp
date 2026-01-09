@@ -1,5 +1,6 @@
 ﻿#include <windows.h>
 #include <richedit.h>
+#include <sstream>
 #include "LogSystem.h"
 
 using namespace WYD_Server;
@@ -9,8 +10,37 @@ HWND hEditPackets;
 HWND hEditServerInfo;
 HWND hEditMessage;
 HWND hButtonSendMsg;
-HWND hButtonFuture1;
-HWND hButtonFuture2;
+HWND hButtonClearLog;
+HWND hButtonTestLogs;
+
+void UpdateServerInfo() {
+    std::stringstream ss;
+    ss << "=== INFORMAÇÕES DO SERVIDOR ===\r\n";
+    ss << "Sistema de Log: Ativo\r\n";
+    ss << "Versão: 2.0 (Thread-Safe)\r\n";
+    ss << "Modo Assíncrono: Habilitado\r\n";
+    ss << "Compressão: Configurada\r\n";
+    ss << "Backup FTP: Configurado\r\n";
+    ss << "\r\n";
+    ss << "Status: Operacional ✓\r\n";
+    ss << "Logs sendo gravados em: ./Log/\r\n";
+    
+    SetWindowTextA(hEditServerInfo, ss.str().c_str());
+    
+    // Aplicar cor de fundo ao ServerInfo também
+    SendMessageA(hEditServerInfo, EM_SETBKGNDCOLOR, 0, RGB(20, 20, 20));
+    
+    CHARFORMAT2A cf{};
+    cf.cbSize = sizeof(CHARFORMAT2A);
+    cf.dwMask = CFM_COLOR | CFM_FACE | CFM_SIZE;
+    cf.crTextColor = RGB(0, 255, 255);  // Ciano
+    strcpy_s(cf.szFaceName, "Consolas");
+    cf.yHeight = 200;
+    
+    SendMessageA(hEditServerInfo, EM_SETSEL, 0, -1);
+    SendMessageA(hEditServerInfo, EM_SETCHARFORMAT, SCF_SELECTION, (LPARAM)&cf);
+    SendMessageA(hEditServerInfo, EM_SETSEL, 0, 0);
+}
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
@@ -20,7 +50,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
             const int margin = static_cast<int>(10 * scale);
             const int spacing = static_cast<int>(10 * scale);
-            const int buttonW = static_cast<int>(100 * scale);
+            const int buttonW = static_cast<int>(120 * scale);
             const int buttonH = static_cast<int>(30 * scale);
 
             RECT rc;
@@ -31,23 +61,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             int topH = (cy * 50 + 50) / 100; // 50%
             int midH = (cy * 40 + 50) / 100; // 40%
 
-            // RichEdit LogSystem
+            // RichEdit LogSystem (esquerda)
             hEditLog = CreateWindowExA(0, MSFTEDIT_CLASSA, "",
-                WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
+                WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL,
                 margin, margin, cx / 2 - spacing, topH,
                 hWnd, NULL, GetModuleHandle(NULL), NULL);
             SendMessageA(hEditLog, EM_SETBKGNDCOLOR, 0, RGB(20, 20, 20));
 
-            // Área de Packets
+            // Área de Packets (direita)
             hEditPackets = CreateWindowExA(0, MSFTEDIT_CLASSA, "",
-                WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
+                WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL,
                 cx / 2 + spacing, margin, cx / 2 - 2 * margin, topH,
                 hWnd, NULL, GetModuleHandle(NULL), NULL);
             SendMessageA(hEditPackets, EM_SETBKGNDCOLOR, 0, RGB(20, 20, 20));
 
             // Informações do servidor
             hEditServerInfo = CreateWindowExA(0, MSFTEDIT_CLASSA, "",
-                WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY,
+                WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL,
                 margin, margin + topH + spacing, cx - 2 * margin, midH,
                 hWnd, NULL, GetModuleHandle(NULL), NULL);
             SendMessageA(hEditServerInfo, EM_SETBKGNDCOLOR, 0, RGB(20, 20, 20));
@@ -57,33 +87,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             msgW = max(0, msgW);
 
             // Campo de mensagem
-            hEditMessage = CreateWindowExA(0, "EDIT", "",
+            hEditMessage = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
                 WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
                 margin, cy - buttonH - margin, msgW, buttonH,
                 hWnd, NULL, GetModuleHandle(NULL), NULL);
 
-            // Botão Enviar
+            // Botão Enviar Mensagem
             int btnX = margin + msgW + spacing;
-            hButtonSendMsg = CreateWindowExA(0, "BUTTON", "Enviar",
+            hButtonSendMsg = CreateWindowExA(0, "BUTTON", "Enviar Msg",
                 WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
                 btnX, cy - buttonH - margin, buttonW, buttonH,
                 hWnd, (HMENU)(INT_PTR)2001, GetModuleHandle(NULL), NULL);
 
-            // Botão Futuro 1
+            // Botão Limpar Logs
             btnX += buttonW + spacing;
-            hButtonFuture1 = CreateWindowExA(0, "BUTTON", "Ação futura 1",
+            hButtonClearLog = CreateWindowExA(0, "BUTTON", "Limpar Logs",
                 WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                 btnX, cy - buttonH - margin, buttonW, buttonH,
                 hWnd, (HMENU)(INT_PTR)2002, GetModuleHandle(NULL), NULL);
 
-            // Botão Futuro 2
+            // Botão Testar Logs
             btnX += buttonW + spacing;
-            hButtonFuture2 = CreateWindowExA(0, "BUTTON", "Ação futura 2",
+            hButtonTestLogs = CreateWindowExA(0, "BUTTON", "Testar Logs",
                 WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
                 btnX, cy - buttonH - margin, buttonW, buttonH,
                 hWnd, (HMENU)(INT_PTR)2003, GetModuleHandle(NULL), NULL);
 
-			// Define quais tipos seram gravados no arquivo de log
+			// Define quais tipos serão gravados no arquivo de log
             pLog.EnableFileLevel(LogLevel::Info);
             pLog.EnableFileLevel(LogLevel::Warning);
             pLog.EnableFileLevel(LogLevel::Error);
@@ -92,47 +122,63 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             pLog.SetTarget(TargetSide::Left, hEditLog);
             pLog.SetTarget(TargetSide::Right, hEditPackets);
 
-			// Teste de logs simulação de mensagens de servidor
-            pLog.Trace("Mensagem de rastreamento detalhado.");
-            pLog.Debug("Mensagem de depuração.");
-            pLog.Info("Servidor iniciado com sucesso.");
-            pLog.Info("Testando outros parametros.");
-            pLog.Warning("Conexão instável detectada.");
-            pLog.Error("Falha crítica no subsistema.");
-			pLog.Quest("Quest iniciada pelo jogador.");
-			pLog.Packets("Pacote recebido do cliente.");
+            // Atualizar informações do servidor
+            UpdateServerInfo();
+
+			// Teste inicial de logs
+            pLog.Trace("Sistema de rastreamento inicializado");
+            pLog.Debug("Modo debug ativado");
+            pLog.Info("Servidor iniciado com sucesso");
+            pLog.Warning("Sistema de logs thread-safe ativo");
+			pLog.Quest("Sistema de quests carregado");
+			pLog.Packets("Sistema de pacotes online");
         } break;
 
         case WM_COMMAND: {
             switch (LOWORD(wParam)) {
-            case 2002: // Limpar Logs
-                SendMessageA(hEditLog, EM_SETREADONLY, FALSE, 0);
-                SetWindowTextA(hEditLog, "");
-                SendMessageA(hEditLog, EM_SETREADONLY, TRUE, 0);
-                pLog.Info("Log apagado com sucesso.");
+            case 2001: { // Enviar Mensagem
+                char buffer[256];
+                GetWindowTextA(hEditMessage, buffer, 256);
+                
+                if (strlen(buffer) > 0) {
+                    pLog.Info("Mensagem do usuário", buffer);
+                    SetWindowTextA(hEditMessage, "");  // Limpar campo
+                }
+                else {
+                    pLog.Warning("Campo de mensagem vazio");
+                }
                 break;
+            }
 
-            case 2003: // Enviar Log
-                std::string ipStr = "192.168.0.1";
+            case 2002: { // Limpar Logs
+                pLog.ClearRichEdit(TargetSide::Left);
+                pLog.Info("Log principal limpo pelo usuário");
+                break;
+            }
+
+            case 2003: { // Testar Logs
+                pLog.Info("Iniciando teste de logs...");
+                
+                // Simular IP
+                std::string ipStr = "192.168.1.100";
                 unsigned int a, b, c, d;
                 char dot;
 
                 std::stringstream ss(ipStr);
                 ss >> a >> dot >> b >> dot >> c >> dot >> d;
+                unsigned int testIp = (a << 24) | (b << 16) | (c << 8) | d;
 
-                unsigned int Ip = (a << 24) | (b << 16) | (c << 8) | d;
-
-                pLog.Info("Mensagem de teste enviada pelo botão.");
-                pLog.Trace("Mensagem de rastreamento detalhado.");
-                pLog.Debug("Mensagem de depuração.");
-                pLog.Info("Servidor iniciado com sucesso.");
-                pLog.Info("Testando outros parametros.", "Segunda String1", Ip);
-                pLog.Info("Testando outros parametros.", "Segunda String2", Ip);
-                pLog.Warning("Conexão instável detectada.");
-                pLog.Error("Falha crítica no subsistema.");
-				pLog.Quest("Quest iniciada pelo jogador.", "Detalhes da quest", Ip);
-				pLog.Packets("Pacote recebido do cliente.", "Detalhes do pacote", Ip);
+                pLog.Trace("Teste de mensagem TRACE");
+                pLog.Debug("Teste de mensagem DEBUG");
+                pLog.Info("Teste de mensagem INFO", "contexto adicional", testIp);
+                pLog.Warning("Teste de mensagem WARNING", "alerta de teste");
+                pLog.Error("Teste de mensagem ERROR", "erro simulado", testIp);
+                pLog.Quest("Quest aceita pelo jogador", "ID Quest: 1001", testIp);
+                pLog.Packets("Pacote C2S_MOVE recebido", "Tamanho: 16 bytes", testIp);
+                
+                pLog.Info("Teste de logs concluído");
                 break;
+            }
             }
         } break;
 
@@ -145,11 +191,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
             const int margin = static_cast<int>(10 * scale);
             const int spacing = static_cast<int>(10 * scale);
-            const int buttonW = static_cast<int>(100 * scale);
+            const int buttonW = static_cast<int>(120 * scale);
             const int buttonH = static_cast<int>(30 * scale);
 
-            int topH = (cy * 50 + 50) / 100; // 50% da altura
-            int midH = (cy * 40 + 50) / 100; // 40% da altura
+            int topH = (cy * 50 + 50) / 100;
+            int midH = (cy * 40 + 50) / 100;
 
             topH = max(topH, buttonH);
             midH = max(midH, buttonH);
@@ -164,7 +210,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             MoveWindow(hEditServerInfo, margin, margin + topH + spacing, max(0, cx - 2 * margin), midH, TRUE);
 
             int totalButtonW = 3 * buttonW + 2 * spacing;
-
             int msgW = cx - totalButtonW - 2 * margin - spacing;
             msgW = max(0, msgW);
 
@@ -175,11 +220,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
             MoveWindow(hButtonSendMsg, btnX, cy - buttonH - margin, buttonW, buttonH, TRUE);
 
             btnX += buttonW + spacing;
-            MoveWindow(hButtonFuture1, btnX, cy - buttonH - margin, buttonW, buttonH, TRUE);
+            MoveWindow(hButtonClearLog, btnX, cy - buttonH - margin, buttonW, buttonH, TRUE);
 
             btnX += buttonW + spacing;
-            MoveWindow(hButtonFuture2, btnX, cy - buttonH - margin, buttonW, buttonH, TRUE);
+            MoveWindow(hButtonTestLogs, btnX, cy - buttonH - margin, buttonW, buttonH, TRUE);
         } break;
+
+        case WM_CLOSE:
+            // Shutdown log system BEFORE destroying window
+            pLog.Info("Fechando aplicação...");
+            pLog.Shutdown();
+            DestroyWindow(hWnd);
+            return 0;
 
         case WM_DESTROY:
             PostQuitMessage(0);
@@ -196,21 +248,30 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     LoadLibraryA("Msftedit.dll");
 
-    const char CLASS_NAME[] = "LogSystem";
+    const char CLASS_NAME[] = "LogSystemMB";
 
     WNDCLASSA wc = {};
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
     wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 
-    RegisterClassA(&wc);
+    if (!RegisterClassA(&wc)) {
+        MessageBoxA(NULL, "Falha ao registrar classe da janela", "Erro", MB_OK | MB_ICONERROR);
+        return 1;
+    }
 
     HWND hWnd = CreateWindowExA(
-        0, CLASS_NAME, "TesteLogSystem",
+        0, CLASS_NAME, "LogSystem MB - Thread-Safe Edition",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 1480, 768,
         NULL, NULL, hInstance, NULL);
+
+    if (!hWnd) {
+        MessageBoxA(NULL, "Falha ao criar janela", "Erro", MB_OK | MB_ICONERROR);
+        return 1;
+    }
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
@@ -221,5 +282,5 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         DispatchMessageA(&msg);
     }
 
-    return 0;
+    return (int)msg.wParam;
 }
