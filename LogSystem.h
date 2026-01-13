@@ -24,6 +24,7 @@
 #include <atomic>
 #include <memory>
 #include <array>
+#include <future>
 
 // Definição da macro para usar com CreateWindowExA
 #define MSFTEDIT_CLASSA "RICHEDIT50W"

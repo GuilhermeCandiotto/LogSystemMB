@@ -62,32 +62,46 @@ LogSystem::~LogSystem() {
 }
 
 void LogSystem::Shutdown() {
+    // Verificar se já foi chamado (evitar double-shutdown)
+    static std::atomic<bool> shutdownCalled{false};
+    if (shutdownCalled.exchange(true)) {
+        return; // Já foi chamado anteriormente
+    }
+
+    // Sinalizar parada da worker thread
+    stopWorker.store(true, std::memory_order_release);
+    
+    // Aguardar thread worker com timeout de 1 segundo
     if (asyncLogging && workerThread.joinable()) {
-        stopWorker.store(true, std::memory_order_release);
-            
-        // Wake up worker thread if sleeping
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            
-        // Wait for worker to finish (max 5 seconds)
-        auto start = std::chrono::steady_clock::now();
-        while (workerThread.joinable()) {
-            if (std::chrono::steady_clock::now() - start > std::chrono::seconds(5)) {
-                // Force termination after timeout
-                Warning("Worker thread timeout - forcing shutdown");
-                break;
-            }
-                
-            // Try to join
+        // Usar future para timeout
+        std::promise<void> exitSignal;
+        auto future = exitSignal.get_future();
+        
+        std::thread joiner([this, &exitSignal]() {
             if (workerThread.joinable()) {
                 workerThread.join();
-                break;
+            }
+            exitSignal.set_value();
+        });
+        
+        // Aguardar até 1 segundo
+        if (future.wait_for(std::chrono::seconds(1)) == std::future_status::timeout) {
+            // Timeout - thread travada, fazer detach
+            if (workerThread.joinable()) {
+                workerThread.detach();
             }
         }
-    }
         
-    // Final flush
+        // Limpar thread auxiliar
+        if (joiner.joinable()) {
+            joiner.detach();
+        }
+    }
+    
+    // Final flush do arquivo
     if (logFile.is_open()) {
         logFile.flush();
+        logFile.close();
     }
 }
 

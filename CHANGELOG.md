@@ -5,6 +5,22 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [2.0.2] - 2024-01-15
+
+### Fixed
+- ?? **Aplicação travando ao fechar**: Corrigido deadlock no `Shutdown()`
+  - Substituído loop infinito por `std::future` com timeout de 1 segundo
+  - Implementado double-shutdown protection com `std::atomic`
+  - Worker thread agora termina gracefully ou detach após timeout
+  - Thread auxiliar para join não bloqueia processo principal
+- ?? **Thread safety melhorado**: Exchange atomic para evitar race em shutdown
+
+### Changed
+- ?? Timeout de shutdown reduzido de 5s para 1s (mais responsivo)
+- ?? Shutdown agora usa pattern de future/promise para timeout assíncrono
+
+---
+
 ## [2.0.1] - 2024-01-15
 
 ### Fixed

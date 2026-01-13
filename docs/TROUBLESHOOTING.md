@@ -14,11 +14,15 @@
 
 **Solução:**
 
-? **Versão 2.0.1+**: Problema já corrigido. O sistema agora:
+? **Versão 2.0.2+**: Problema completamente resolvido. O sistema agora:
 - Detecta `WM_CLOSE` antes de destruir a janela
 - Chama `Shutdown()` automaticamente
-- Worker thread tem timeout de 5 segundos
-- Flush final garantido
+- Worker thread tem timeout de 1 segundo (não trava mais!)
+- Usa std::future para timeout assíncrono
+- Double-shutdown protection
+- Detach automático se thread não responder
+
+? **Versão 2.0.1**: Problema parcialmente corrigido (ainda podia travar)
 
 Se ainda assim ocorrer:
 
